@@ -5,6 +5,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import dotenv from 'dotenv';
 import { FastmailClient } from './fastmail-client.js';
+import { EmailAnalyticsEngine } from './email-analytics.js';
 
 // Load environment variables
 dotenv.config();
@@ -22,6 +23,9 @@ if (!email || !apiToken) {
 
 // Create Fastmail client
 const fastmail = new FastmailClient(email, apiToken);
+
+// Create Analytics engine
+const analytics = new EmailAnalyticsEngine(fastmail);
 
 // Create MCP server
 const server = new Server({
@@ -209,6 +213,60 @@ server.setRequestHandler(ToolsListRequestSchema, async () => {
             limit: { type: 'number', description: 'Maximum number of results (default: 50)' }
           },
           required: ['query']
+        }
+      },
+      // 📊 ANALYTICS TOOLS
+      {
+        name: 'generate_email_analytics',
+        description: 'Generate comprehensive email analytics and insights for a specified period',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            days: { type: 'number', description: 'Number of days to analyze (default: 30)' },
+            maxEmails: { type: 'number', description: 'Maximum number of emails to analyze (default: 1000)' },
+            includeContent: { type: 'boolean', description: 'Include content analysis (default: true)' }
+          }
+        }
+      },
+      {
+        name: 'get_email_volume_stats',
+        description: 'Get email volume statistics (sent/received counts) for a period',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            days: { type: 'number', description: 'Number of days to analyze (default: 30)' }
+          }
+        }
+      },
+      {
+        name: 'get_top_senders',
+        description: 'Get top email senders analysis with counts and percentages',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            limit: { type: 'number', description: 'Number of top senders to return (default: 10)' },
+            days: { type: 'number', description: 'Number of days to analyze (default: 30)' }
+          }
+        }
+      },
+      {
+        name: 'get_activity_patterns',
+        description: 'Get email activity patterns by hour, day, and month',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            days: { type: 'number', description: 'Number of days to analyze (default: 30)' }
+          }
+        }
+      },
+      {
+        name: 'generate_email_report',
+        description: 'Generate a comprehensive email analytics report with insights and recommendations',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            days: { type: 'number', description: 'Number of days to analyze (default: 30)' }
+          }
         }
       }
     ]
@@ -423,6 +481,73 @@ server.setRequestHandler(ToolsCallRequestSchema, async (request) => {
               query,
               emails: formattedEmails
             }, null, 2)
+          }]
+        };
+      }
+
+      // 📊 ANALYTICS TOOLS HANDLERS
+      case 'generate_email_analytics': {
+        const { days = 30, maxEmails = 1000, includeContent = true } = args;
+        
+        const analyticsData = await analytics.generateAnalytics({
+          startDate: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString(),
+          endDate: new Date().toISOString(),
+          maxEmails,
+          includeContent
+        });
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(analyticsData, null, 2)
+          }]
+        };
+      }
+
+      case 'get_email_volume_stats': {
+        const { days = 30 } = args;
+        const volumeStats = await analytics.getVolumeAnalytics(days);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(volumeStats, null, 2)
+          }]
+        };
+      }
+
+      case 'get_top_senders': {
+        const { limit = 10, days = 30 } = args;
+        const topSenders = await analytics.getTopSenders(limit, days);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(topSenders, null, 2)
+          }]
+        };
+      }
+
+      case 'get_activity_patterns': {
+        const { days = 30 } = args;
+        const patterns = await analytics.getActivityPatterns(days);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(patterns, null, 2)
+          }]
+        };
+      }
+
+      case 'generate_email_report': {
+        const { days = 30 } = args;
+        const report = await analytics.generateEmailReport(days);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: report
           }]
         };
       }
