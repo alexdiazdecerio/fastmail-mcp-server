@@ -1,0 +1,28 @@
+{
+  "name": "fastmail-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for Fastmail email management using JMAP API",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "fastmail-mcp": "./build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "dev": "npm run build && node build/index.js",
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "0.6.0",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  }
+}
