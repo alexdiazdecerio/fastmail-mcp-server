@@ -246,7 +246,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ## 📈 Roadmap
 
 - [ ] **Email Templates** - Reusable email templates
-- [ ] **Advanced Analytics** - Email usage insights and reports  
+- [x] **Advanced Analytics** - Email usage insights and reports ✅ **COMPLETED v1.1.0**
 - [ ] **Multi-Account Support** - Manage multiple Fastmail accounts
 - [ ] **Webhook Support** - Real-time email notifications
 - [ ] **Plugin System** - Extensible architecture for custom features
