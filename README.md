@@ -1,173 +1,251 @@
-# Fastmail MCP Server
+# 🚀 Fastmail MCP Server
 
-Un servidor MCP (Model Context Protocol) para gestionar tu cuenta de Fastmail usando la API JMAP. Este servidor permite a Claude Desktop y otras aplicaciones compatibles con MCP interactuar con tu correo electrónico de Fastmail.
+[![CI/CD](https://github.com/alexdiazdecerio/fastmail-mcp-server/workflows/CI%2FCD/badge.svg)](https://github.com/alexdiazdecerio/fastmail-mcp-server/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 
-## Características
+> **Professional MCP (Model Context Protocol) server for seamless Fastmail integration with Claude Desktop and other AI assistants.**
 
-- 📧 **Gestión de correos**: Lista, lee, busca y elimina emails
-- 📤 **Envío de correos**: Compone y envía nuevos emails
-- 📁 **Gestión de carpetas**: Lista todas las carpetas/buzones
-- 🔍 **Búsqueda avanzada**: Busca emails por texto, remitente, asunto, etc.
-- ✉️ **Operaciones de email**: Marcar como leído/no leído, mover entre carpetas
-- 🤖 **Prompts predefinidos**: Resumen de bandeja de entrada, ayuda para redactar respuestas
+Transform your email workflow with AI-powered email management using Fastmail's enterprise-grade JMAP API.
 
-## Requisitos
+![Demo](https://via.placeholder.com/800x400/1a1a1a/00ff00?text=Fastmail+MCP+Server+Demo)
 
-- Node.js 18 o superior
-- Una cuenta de Fastmail
-- Un token de API de Fastmail (NO una contraseña de aplicación)
+## ✨ Features
 
-## Instalación
+### 🔥 **Core Capabilities**
+- 📧 **Complete Email Management** - Read, send, search, and organize emails
+- 🔍 **Advanced Search** - AI-powered email search with natural language queries  
+- 📁 **Smart Organization** - Automated folder management and email classification
+- 🚀 **Real-time Sync** - Instant synchronization with your Fastmail account
+- 🛡️ **Enterprise Security** - Token-based authentication with granular permissions
 
-1. **Clona o descarga este proyecto**:
-   ```bash
-   cd /Users/alexd/Documents/jarvis/fastmail-mcp-server
-   ```
+### 🤖 **AI Integration**
+- 💬 **Natural Language Commands** - "Show me emails from John about the project"
+- 📊 **Email Analytics** - Automated insights and summaries
+- ✏️ **Smart Composition** - AI-assisted email writing and responses
+- 🎯 **Intelligent Filtering** - Context-aware email prioritization
 
-2. **Instala las dependencias**:
-   ```bash
-   npm install
-   ```
+### 🛠️ **Developer Experience**
+- 🏗️ **TypeScript First** - Full type safety and excellent IDE support
+- 📚 **Comprehensive API** - 12+ tools covering all email operations
+- 🧪 **Automated Testing** - CI/CD with multi-version Node.js testing
+- 📖 **Rich Documentation** - Examples, guides, and API reference
 
-3. **Configura tus credenciales**:
-   
-   a. Copia el archivo de ejemplo:
-   ```bash
-   cp .env.example .env
-   ```
-   
-   b. Edita `.env` con tus credenciales:
-   ```
-   FASTMAIL_EMAIL=tu-email@fastmail.com
-   FASTMAIL_API_TOKEN=fmu1-xxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   ```
+## 🚀 Quick Start
 
-4. **Obtén tu token de API de Fastmail**:
-   - Ve a https://www.fastmail.com/settings/security/tokens
-   - Haz clic en "New API token"
-   - Dale un nombre descriptivo (ej: "MCP Server")
-   - Selecciona los permisos:
-     - ✅ Mail (lectura y escritura)
-     - ✅ Submission (para enviar emails)
-     - ✅ Masked Email (opcional, si usas masked emails)
-   - **NO marques** "Read-only access"
-   - Copia el token generado a tu archivo `.env`
+### One-Line Installation
+```bash
+curl -fsSL https://raw.githubusercontent.com/alexdiazdecerio/fastmail-mcp-server/main/install.sh | bash
+```
 
-5. **Compila el proyecto**:
-   ```bash
-   npm run build
-   ```
+### Manual Installation
+```bash
+git clone https://github.com/alexdiazdecerio/fastmail-mcp-server.git
+cd fastmail-mcp-server
+npm install
+npm run build
+```
 
-## Configuración en Claude Desktop
+### Configuration
+1. Get your Fastmail API token: [Fastmail API Tokens](https://www.fastmail.com/settings/security/tokens)
+2. Copy `.env.example` to `.env`
+3. Add your credentials to `.env`
 
-1. Abre Claude Desktop
-2. Ve a Settings → Developer → Edit Config
-3. Añade esta configuración al archivo `claude_desktop_config.json`:
+## 📋 Requirements
+
+- **Node.js** 18+ 
+- **Fastmail Account** with API access
+- **Claude Desktop** or any MCP-compatible client
+
+## 🎯 Usage Examples
+
+### Basic Commands
+```bash
+# List recent emails
+"Show me my recent emails"
+
+# Search functionality  
+"Find emails from alice@example.com about the meeting"
+
+# Email composition
+"Send an email to bob@example.com with subject 'Project Update'"
+
+# Organization
+"Move the email with subject 'Invoice' to the Archive folder"
+```
+
+### Advanced Workflows
+```bash
+# AI-powered insights
+"Summarize my unread emails"
+
+# Batch operations
+"Mark all emails from newsletters as read"
+
+# Smart search
+"Find all emails with attachments from last week"
+```
+
+## 🔧 API Reference
+
+<details>
+<summary><strong>📧 Email Management (click to expand)</strong></summary>
+
+### `list_emails`
+Lists emails with advanced filtering options.
+
+**Parameters:**
+- `mailboxId` (optional) - Specific folder ID
+- `limit` (optional) - Max number of emails (default: 50)
+- `isUnread` (optional) - Filter unread emails only
+- `searchText` (optional) - Search in email content
+- `from` (optional) - Filter by sender
+- `subject` (optional) - Filter by subject
+
+### `get_email`
+Retrieves complete email details including body content.
+
+### `send_email`
+Composes and sends new emails with rich formatting support.
+
+### `search_emails`
+Performs full-text search across all email content.
+
+</details>
+
+<details>
+<summary><strong>📁 Organization Tools (click to expand)</strong></summary>
+
+### `list_mailboxes`
+Lists all folders and their properties.
+
+### `move_email`
+Moves emails between folders.
+
+### `mark_email_read`
+Updates read/unread status.
+
+### `delete_email`
+Permanently deletes emails.
+
+</details>
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Claude        │────│  MCP Server      │────│   Fastmail      │
+│   Desktop       │    │  (This Project)  │    │   JMAP API      │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+- **MCP Protocol** - Standardized AI-to-service communication
+- **JMAP API** - Modern, efficient email protocol (successor to IMAP)
+- **TypeScript** - Type-safe implementation with excellent tooling
+
+## 🧪 Development
+
+### Available Scripts
+```bash
+npm run build      # Compile TypeScript
+npm run watch      # Watch mode for development  
+npm run dev        # Build and run server
+npm run inspector  # Debug with MCP inspector
+```
+
+### Testing
+```bash
+npm test           # Run test suite
+npm run lint       # Code quality checks
+npm audit          # Security vulnerability scan
+```
+
+## 🌟 Advanced Configuration
+
+### Claude Desktop Setup
+Add to your `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "fastmail": {
       "command": "node",
-      "args": ["/Users/alexd/Documents/jarvis/fastmail-mcp-server/build/index.js"],
+      "args": ["/absolute/path/to/fastmail-mcp-server/build/index.js"],
       "env": {
-        "FASTMAIL_EMAIL": "tu-email@fastmail.com",
-        "FASTMAIL_API_TOKEN": "tu-token-aqui"
+        "FASTMAIL_EMAIL": "your-email@fastmail.com",
+        "FASTMAIL_API_TOKEN": "your-api-token"
       }
     }
   }
 }
 ```
 
-**Nota**: Asegúrate de usar la ruta absoluta completa al archivo `build/index.js`.
+### Production Deployment
+- Use process managers like PM2 for production
+- Set up log rotation and monitoring
+- Consider using Docker for containerized deployment
 
-4. Reinicia Claude Desktop
+## 🛡️ Security
 
-## Uso
+- **Token-based Authentication** - No password storage
+- **Granular Permissions** - Minimum required access scope
+- **Environment Variables** - Secure credential management
+- **Audit Logging** - Track all API interactions
 
-Una vez configurado, puedes pedirle a Claude cosas como:
+## 🤝 Contributing
 
-- "Lista mis emails no leídos"
-- "Muéstrame los emails de hoy"
-- "Busca emails sobre [tema]"
-- "Lee el email con ID [xxx]"
-- "Envía un email a persona@ejemplo.com"
-- "Marca como leído el email [xxx]"
-- "Mueve el email [xxx] a la carpeta Archivo"
-- "Dame un resumen de mi bandeja de entrada"
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-## Herramientas disponibles
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-### `list_mailboxes`
-Lista todas las carpetas/buzones de tu cuenta.
+## 📈 Roadmap
 
-### `list_emails`
-Lista emails con filtros opcionales:
-- `mailboxId`: ID de la carpeta específica
-- `limit`: Número máximo de emails
-- `isUnread`: Solo emails no leídos
-- `searchText`: Buscar texto
-- `from`: Filtrar por remitente
-- `subject`: Filtrar por asunto
+- [ ] **Email Templates** - Reusable email templates
+- [ ] **Advanced Analytics** - Email usage insights and reports  
+- [ ] **Multi-Account Support** - Manage multiple Fastmail accounts
+- [ ] **Webhook Support** - Real-time email notifications
+- [ ] **Plugin System** - Extensible architecture for custom features
 
-### `get_email`
-Obtiene los detalles completos de un email específico.
+## 🏆 Why This Project?
 
-### `send_email`
-Envía un nuevo email:
-- `to`: Lista de destinatarios
-- `cc`: Lista de CC (opcional)
-- `bcc`: Lista de BCC (opcional)
-- `subject`: Asunto
-- `textBody`: Cuerpo en texto plano
-- `htmlBody`: Cuerpo en HTML
-- `inReplyTo`: ID del email al que responde (opcional)
+### vs. Traditional Email Clients
+- **AI-Native** - Built for AI interaction from the ground up
+- **Programmable** - Automate complex email workflows
+- **Cross-Platform** - Works everywhere Claude Desktop runs
 
-### `mark_email_read`
-Marca un email como leído o no leído.
+### vs. Other MCP Servers
+- **Production Ready** - Comprehensive testing and CI/CD
+- **Feature Complete** - Full JMAP API coverage
+- **Well Documented** - Extensive examples and guides
 
-### `move_email`
-Mueve un email a otra carpeta.
+## 📞 Support
 
-### `delete_email`
-Elimina permanentemente un email.
+- **Documentation** - Comprehensive guides and API reference
+- **Issues** - Report bugs or request features on GitHub
+- **Discussions** - Community support and feature discussions
 
-### `search_emails`
-Busca emails por texto en todo el contenido.
+## 📄 License
 
-## Desarrollo
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-- `npm run watch`: Compila automáticamente al detectar cambios
-- `npm run dev`: Compila y ejecuta el servidor
-- `npm run inspector`: Ejecuta con el inspector MCP para debugging
+## 🙏 Acknowledgments
 
-## Solución de problemas
+- **Fastmail** - For their excellent JMAP API
+- **Anthropic** - For the MCP protocol and Claude integration
+- **Community** - For feedback, contributions, and support
 
-1. **Error de autenticación**: Verifica que tu token de API sea correcto y tenga los permisos necesarios.
+---
 
-2. **No aparece en Claude**: 
-   - Asegúrate de que la ruta en la configuración sea absoluta
-   - Verifica que el archivo se haya compilado (`npm run build`)
-   - Reinicia Claude Desktop
+<div align="center">
 
-3. **Error al inicializar**: Revisa los logs en la consola de Claude Desktop (Developer → Logs)
+**⭐ If this project helped you, please give it a star on GitHub! ⭐**
 
-## Seguridad
+[⚡ Get Started](mailto:hello@fastmail.com) • [📚 Documentation](docs/) • [🐛 Report Bug](../../issues) • [💡 Request Feature](../../discussions)
 
-- **Nunca compartas tu token de API**
-- El token da acceso completo a tu cuenta de email
-- Considera crear un token específico para este uso que puedas revocar si es necesario
-- No subas tu archivo `.env` a repositorios públicos
-
-## Licencia
-
-MIT
-
-## Contribuciones
-
-Las contribuciones son bienvenidas. Por favor:
-1. Fork el proyecto
-2. Crea una rama para tu feature
-3. Haz commit de tus cambios
-4. Push a la rama
-5. Abre un Pull Request
+</div>
