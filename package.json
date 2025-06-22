@@ -1,6 +1,6 @@
 {
   "name": "@alexdiazdecerio/fastmail-mcp-server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "🚀 Professional MCP Server for Fastmail email management using JMAP API - Integrates seamlessly with Claude Desktop and other AI assistants",
   "type": "module",
   "main": "./build/index.js",
