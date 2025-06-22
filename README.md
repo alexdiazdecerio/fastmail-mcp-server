@@ -1,6 +1,8 @@
 # 🚀 Fastmail MCP Server
 
 [![CI/CD](https://github.com/alexdiazdecerio/fastmail-mcp-server/workflows/CI%2FCD/badge.svg)](https://github.com/alexdiazdecerio/fastmail-mcp-server/actions)
+[![NPM Version](https://img.shields.io/npm/v/@alexdiazdecerio/fastmail-mcp-server)](https://www.npmjs.com/package/@alexdiazdecerio/fastmail-mcp-server)
+[![NPM Downloads](https://img.shields.io/npm/dm/@alexdiazdecerio/fastmail-mcp-server)](https://www.npmjs.com/package/@alexdiazdecerio/fastmail-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
@@ -34,13 +36,21 @@ Transform your email workflow with AI-powered email management using Fastmail's 
 
 ## 🚀 Quick Start
 
-### One-Line Installation
+### ⚡ NPM Installation (Recommended)
 ```bash
-curl -fsSL https://raw.githubusercontent.com/alexdiazdecerio/fastmail-mcp-server/main/install.sh | bash
+# Install globally via NPM
+npm install -g @alexdiazdecerio/fastmail-mcp-server
+
+# Or install locally in your project
+npm install @alexdiazdecerio/fastmail-mcp-server
 ```
 
-### Manual Installation
+### 📦 Alternative Installations
 ```bash
+# One-line installation script
+curl -fsSL https://raw.githubusercontent.com/alexdiazdecerio/fastmail-mcp-server/main/install.sh | bash
+
+# Manual installation from source
 git clone https://github.com/alexdiazdecerio/fastmail-mcp-server.git
 cd fastmail-mcp-server
 npm install
@@ -48,9 +58,19 @@ npm run build
 ```
 
 ### Configuration
-1. Get your Fastmail API token: [Fastmail API Tokens](https://www.fastmail.com/settings/security/tokens)
-2. Copy `.env.example` to `.env`
-3. Add your credentials to `.env`
+1. **Get your Fastmail API token:** [Fastmail API Tokens](https://www.fastmail.com/settings/security/tokens)
+2. **Setup environment variables:**
+   ```bash
+   # If installed globally via NPM
+   mkdir -p ~/.fastmail-mcp
+   curl -fsSL https://raw.githubusercontent.com/alexdiazdecerio/fastmail-mcp-server/main/.env.example > ~/.fastmail-mcp/.env
+   # Edit ~/.fastmail-mcp/.env with your credentials
+   
+   # If installed locally or from source
+   cp .env.example .env
+   # Edit .env with your credentials
+   ```
+3. **Add to Claude Desktop config** (see Advanced Configuration section below)
 
 ## 📋 Requirements
 
@@ -164,6 +184,25 @@ npm audit          # Security vulnerability scan
 ## 🌟 Advanced Configuration
 
 ### Claude Desktop Setup
+
+#### For NPM Installation (Global)
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "fastmail": {
+      "command": "fastmail-mcp",
+      "env": {
+        "FASTMAIL_EMAIL": "your-email@fastmail.com",
+        "FASTMAIL_API_TOKEN": "your-api-token"
+      }
+    }
+  }
+}
+```
+
+#### For Manual/Local Installation
 Add to your `claude_desktop_config.json`:
 
 ```json
