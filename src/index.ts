@@ -120,10 +120,14 @@ server.setRequestHandler(ToolsListRequestSchema, async () => {
       },
       {
         name: 'send_email',
-        description: 'Send a new email',
+        description: 'Send a new email. Supports sending from different identities/aliases when "from" parameter is specified.',
         inputSchema: {
           type: 'object',
           properties: {
+            from: { 
+              type: 'string', 
+              description: 'From email address (must be a valid alias/identity). Optional - if not specified, uses the default account email. Available identities can be found by checking your Fastmail aliases.' 
+            },
             to: {
               type: 'array',
               items: {

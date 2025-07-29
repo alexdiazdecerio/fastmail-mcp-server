@@ -252,6 +252,7 @@ export class FastmailClient {
   }
 
   async sendEmail(options: {
+    from?: string;
     to: Array<{ email: string; name?: string }>;
     cc?: Array<{ email: string; name?: string }>;
     bcc?: Array<{ email: string; name?: string }>;
@@ -266,23 +267,13 @@ export class FastmailClient {
     inReplyTo?: string;
     references?: string[];
   }): Promise<{ emailId: string; sentAt: string }> {
-    console.error('🚀 INICIO sendEmail - Parametros:', JSON.stringify({
-      to: options.to,
-      cc: options.cc,
-      subject: options.subject,
-      hasTextBody: !!options.textBody
-    }, null, 2));
     
     try {
       // Get the drafts mailbox ID
-      console.error('🔍 Intentando obtener drafts mailbox...');
       const draftsMailboxId = await this.getDraftsMailbox();
-      console.error('✅ Drafts mailbox obtenido:', draftsMailboxId);
       
-      // Get the primary identity
-      console.error('🆔 Intentando obtener identidad...');
-      const identityId = await this.getPrimaryIdentity();
-      console.error('✅ Identidad obtenida:', identityId);
+      // Get the identity for the specified from address
+      const identityId = await this.getIdentityByEmail(options.from || this.email);
     
     // Create email draft
     const bodyParts: any[] = [];
@@ -301,8 +292,9 @@ export class FastmailClient {
       });
     }
 
+    const fromEmail = options.from || this.email;
     const email: any = {
-      from: [{ email: this.email }],
+      from: [{ email: fromEmail }],
       to: options.to,
       subject: options.subject,
       keywords: { '$draft': true },
@@ -358,7 +350,7 @@ export class FastmailClient {
               emailId: '#draft',
               identityId: identityId,
               envelope: {
-                mailFrom: { email: this.email },
+                mailFrom: { email: fromEmail },
                 rcptTo: [
                   ...options.to.map(t => ({ email: t.email })),
                   ...(options.cc || []).map(t => ({ email: t.email })),
@@ -371,32 +363,73 @@ export class FastmailClient {
       ]
     });
 
-    console.error('JMAP Response:', JSON.stringify(response, null, 2));
+    // Check if we have the correct number of method responses
+    if (!response.methodResponses || response.methodResponses.length < 2) {
+      console.error('❌ Invalid JMAP response structure:', response);
+      throw new Error(`Invalid JMAP response: expected at least 2 method responses, got ${response.methodResponses?.length || 0}`);
+    }
 
     const [, createResult] = response.methodResponses[0];
     const [, sendResult] = response.methodResponses[1];
     
-    console.error('Create Result:', JSON.stringify(createResult, null, 2));
-    console.error('Send Result:', JSON.stringify(sendResult, null, 2));
+    // Enhanced error checking for draft creation
+    if (!createResult) {
+      console.error('❌ No create result received');
+      throw new Error('No create result received from JMAP server');
+    }
     
-    if (!createResult || !createResult.created || !createResult.created.draft) {
+    if (createResult.notCreated) {
+      console.error('❌ Draft creation failed:', createResult.notCreated);
+      throw new Error(`Failed to create draft: ${JSON.stringify(createResult.notCreated)}`);
+    }
+    
+    if (!createResult.created || !createResult.created.draft) {
+      console.error('❌ Draft not created properly:', createResult);
       throw new Error(`Failed to create draft: ${JSON.stringify(createResult)}`);
     }
     
-    if (!sendResult || !sendResult.created || !sendResult.created.sendIt) {
+    const draftId = createResult.created.draft.id;
+    
+    // Enhanced error checking for email submission
+    if (!sendResult) {
+      console.error('❌ No send result received');
+      throw new Error('No send result received from JMAP server');
+    }
+    
+    if (sendResult.notCreated) {
+      console.error('❌ Email submission failed:', sendResult.notCreated);
+      throw new Error(`Failed to send email: ${JSON.stringify(sendResult.notCreated)}`);
+    }
+    
+    if (!sendResult.created || !sendResult.created.sendIt) {
+      console.error('❌ Email submission not created properly:', sendResult);
       throw new Error(`Failed to send email: ${JSON.stringify(sendResult)}`);
     }
     
-    const emailId = createResult.created.draft.id;
     const sentAt = sendResult.created.sendIt.sendAt;
     
-    return { emailId, sentAt };
+    return { emailId: draftId, sentAt };
     } catch (error) {
-      console.error('❌ ERROR COMPLETO en sendEmail:', error instanceof Error ? error.message : String(error));
+      console.error('❌ CRITICAL ERROR in sendEmail operation:');
+      console.error('  - Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('  - Error message:', error instanceof Error ? error.message : String(error));
+      console.error('  - Parameters that failed:');
+      console.error('    - From:', options.from || this.email);
+      console.error('    - To:', JSON.stringify(options.to));
+      console.error('    - Subject:', options.subject);
+      console.error('    - Has text body:', !!options.textBody);
+      console.error('    - Has HTML body:', !!options.htmlBody);
+      
       if (error instanceof Error && error.stack) {
-        console.error('Stack trace:', error.stack);
+        console.error('  - Stack trace:', error.stack);
       }
-      throw error;
+      
+      // Re-throw with additional context
+      const enhancedError = new Error(`SendEmail failed: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof Error) {
+        enhancedError.stack = error.stack;
+      }
+      throw enhancedError;
     }
   }
 
@@ -461,20 +494,14 @@ export class FastmailClient {
   }
 
   private async getDraftsMailbox(): Promise<string> {
-    console.error('🔍 Buscando mailbox de drafts...');
-    
     try {
       const mailboxes = await this.getMailboxes();
-      console.error('📁 Mailboxes encontrados:', JSON.stringify(mailboxes.map(mb => ({ id: mb.id, name: mb.name, role: mb.role })), null, 2));
-      
       const draftsMailbox = mailboxes.find(mb => mb.role === 'drafts');
-      console.error('📝 Drafts mailbox encontrado:', JSON.stringify(draftsMailbox, null, 2));
       
       if (!draftsMailbox) {
         throw new Error('Drafts mailbox not found');
       }
       
-      console.error('✅ Drafts mailbox ID:', draftsMailbox.id);
       return draftsMailbox.id;
     } catch (error) {
       console.error('❌ Error en getDraftsMailbox:', error instanceof Error ? error.message : String(error));
@@ -482,9 +509,7 @@ export class FastmailClient {
     }
   }
 
-  private async getPrimaryIdentity(): Promise<string> {
-    console.error('🆔 Buscando identidad principal...');
-    
+  private async getIdentityByEmail(emailAddress: string): Promise<string> {
     try {
       const response = await this.makeRequest({
         using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:submission'],
@@ -497,16 +522,47 @@ export class FastmailClient {
       });
       
       const [, result] = response.methodResponses[0];
-      console.error('🆔 Identidades encontradas:', JSON.stringify(result.list, null, 2));
+      
+      if (!result.list || result.list.length === 0) {
+        throw new Error('No identities found');
+      }
+      
+      // Find identity that matches the email address
+      const identity = result.list.find((id: any) => id.email === emailAddress);
+      
+      if (!identity) {
+        console.error(`❌ No identity found for email address: ${emailAddress}`);
+        console.error('Available identities:', result.list.map((id: any) => id.email));
+        throw new Error(`No identity found for email address: ${emailAddress}`);
+      }
+      
+      return identity.id;
+    } catch (error) {
+      console.error('❌ Error en getIdentityByEmail:', error instanceof Error ? error.message : String(error));
+      throw error;
+    }
+  }
+
+  private async getPrimaryIdentity(): Promise<string> {
+    try {
+      const response = await this.makeRequest({
+        using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:submission'],
+        methodCalls: [
+          ['Identity/get', {
+            accountId: this.accountId,
+            ids: null
+          }, '0']
+        ]
+      });
+      
+      const [, result] = response.methodResponses[0];
       
       // Use the first identity (usually the primary one)
       if (!result.list || result.list.length === 0) {
         throw new Error('No identities found');
       }
       
-      const identityId = result.list[0].id;
-      console.error('✅ Identidad seleccionada:', identityId);
-      return identityId;
+      return result.list[0].id;
     } catch (error) {
       console.error('❌ Error en getPrimaryIdentity:', error instanceof Error ? error.message : String(error));
       throw error;
