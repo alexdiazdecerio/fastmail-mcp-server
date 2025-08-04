@@ -250,6 +250,78 @@ server.setRequestHandler(ToolsListRequestSchema, async () => {
           required: ['query']
         }
       },
+      {
+        name: 'search_advanced',
+        description: 'Advanced JMAP email search with full filtering capabilities. Note: JMAP servers enforce per-query limits - use pagination (limit + position) for large result sets.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            filter: {
+              type: 'object',
+              description: 'JMAP filter conditions',
+              properties: {
+                // Mailbox filters
+                inMailbox: { type: 'string', description: 'Search in specific mailbox ID' },
+                inMailboxOtherThan: { 
+                  type: 'array', 
+                  items: { type: 'string' },
+                  description: 'Exclude specific mailbox IDs' 
+                },
+                
+                // Date filters
+                before: { type: 'string', description: 'Emails received before this date (ISO format)' },
+                after: { type: 'string', description: 'Emails received on/after this date (ISO format)' },
+                
+                // Size filters
+                minSize: { type: 'number', description: 'Minimum email size in bytes' },
+                maxSize: { type: 'number', description: 'Maximum email size in bytes' },
+                
+                // Text search filters
+                text: { type: 'string', description: 'Search across all text fields (from, to, cc, bcc, subject, body)' },
+                from: { type: 'string', description: 'Search in From field only' },
+                to: { type: 'string', description: 'Search in To field only' },
+                cc: { type: 'string', description: 'Search in Cc field only' },
+                bcc: { type: 'string', description: 'Search in Bcc field only' },
+                subject: { type: 'string', description: 'Search in Subject field only' },
+                body: { type: 'string', description: 'Search in message body only' },
+                
+                // Keyword/flag filters
+                hasKeyword: { type: 'string', description: 'Email must have this keyword/flag (e.g., $seen, $flagged, $draft)' },
+                notKeyword: { type: 'string', description: 'Email must NOT have this keyword/flag' },
+                allInThreadHaveKeyword: { type: 'string', description: 'All emails in thread must have this keyword' },
+                someInThreadHaveKeyword: { type: 'string', description: 'At least one email in thread has this keyword' },
+                noneInThreadHaveKeyword: { type: 'string', description: 'No emails in thread have this keyword' },
+                
+                // Attachment filter
+                hasAttachment: { type: 'boolean', description: 'Filter by attachment presence' },
+                
+                // Convenience filters
+                isUnread: { type: 'boolean', description: 'Filter for unread emails (converted to notKeyword: $seen)' },
+                isFlagged: { type: 'boolean', description: 'Filter for flagged emails (converted to hasKeyword: $flagged)' },
+                isDraft: { type: 'boolean', description: 'Filter for draft emails (converted to hasKeyword: $draft)' }
+              }
+            },
+            sort: {
+              type: 'array',
+              description: 'Sort criteria',
+              items: {
+                type: 'object',
+                properties: {
+                  property: { 
+                    type: 'string', 
+                    enum: ['receivedAt', 'from', 'subject', 'size'],
+                    description: 'Property to sort by' 
+                  },
+                  isAscending: { type: 'boolean', description: 'Sort direction (default: false)' }
+                },
+                required: ['property']
+              }
+            },
+            limit: { type: 'number', description: 'Maximum number of results per query (default: 50, server may enforce lower caps)' },
+            position: { type: 'number', description: 'Starting position for pagination - use with limit to retrieve large result sets (default: 0)' }
+          }
+        }
+      },
       // 📊 ANALYTICS TOOLS
       {
         name: 'generate_email_analytics',
@@ -576,6 +648,53 @@ server.setRequestHandler(ToolsCallRequestSchema, async (request) => {
               total,
               count: emails.length,
               query,
+              emails: formattedEmails
+            }, null, 2)
+          }]
+        };
+      }
+
+      case 'search_advanced': {
+        const { filter = {}, sort, limit, position } = args;
+        
+        const { emails, total } = await fastmail.searchJMAP({
+          filter,
+          sort,
+          limit,
+          position
+        });
+        
+        const formattedEmails = emails.map(email => ({
+          id: email.id,
+          subject: email.subject || '(no subject)',
+          from: email.from?.[0] || { email: 'unknown', name: 'Unknown' },
+          to: email.to || [],
+          cc: email.cc || [],
+          bcc: email.bcc || [],
+          receivedAt: email.receivedAt,
+          size: email.size,
+          preview: email.preview,
+          hasAttachment: email.hasAttachment || false,
+          isRead: email.keywords['$seen'] || false,
+          isFlagged: email.keywords['$flagged'] || false,
+          isDraft: email.keywords['$draft'] || false,
+          keywords: email.keywords || {},
+          mailboxIds: email.mailboxIds || []
+        }));
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              total,
+              count: emails.length,
+              requestedLimit: limit || 50,
+              actualLimit: emails.length,
+              position: position || 0,
+              hasMoreResults: emails.length === (limit || 50),
+              paginationNote: emails.length === (limit || 50) ? "Results equal requested limit - may indicate more data available. Use position parameter to paginate." : null,
+              filter,
+              sort,
               emails: formattedEmails
             }, null, 2)
           }]

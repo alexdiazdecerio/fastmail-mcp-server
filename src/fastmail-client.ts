@@ -537,6 +537,92 @@ export class FastmailClient {
     });
   }
 
+  async searchJMAP(options: {
+    filter?: any;
+    sort?: Array<{ property: string; isAscending?: boolean }>;
+    limit?: number;
+    position?: number;
+  } = {}): Promise<{ emails: Email[]; total: number }> {
+    // Process the filter to handle convenience properties and JMAP-specific features
+    const processedFilter: any = {};
+    
+    if (options.filter) {
+      // Copy all direct JMAP properties
+      Object.assign(processedFilter, options.filter);
+      
+      // Handle convenience filters
+      if ('isUnread' in options.filter) {
+        if (options.filter.isUnread) {
+          processedFilter.notKeyword = '$seen';
+        } else {
+          processedFilter.hasKeyword = '$seen';
+        }
+        delete processedFilter.isUnread;
+      }
+      
+      if ('isFlagged' in options.filter) {
+        if (options.filter.isFlagged) {
+          processedFilter.hasKeyword = '$flagged';
+        } else {
+          processedFilter.notKeyword = '$flagged';
+        }
+        delete processedFilter.isFlagged;
+      }
+      
+      if ('isDraft' in options.filter) {
+        if (options.filter.isDraft) {
+          processedFilter.hasKeyword = '$draft';
+        } else {
+          processedFilter.notKeyword = '$draft';
+        }
+        delete processedFilter.isDraft;
+      }
+    }
+
+    // Build sort criteria with defaults
+    const sortCriteria = options.sort || [{ property: 'receivedAt', isAscending: false }];
+
+    // First, query for email IDs
+    const queryResponse = await this.makeRequest({
+      using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail'],
+      methodCalls: [
+        ['Email/query', {
+          accountId: this.accountId,
+          filter: processedFilter,
+          sort: sortCriteria,
+          limit: options.limit || 50,
+          position: options.position || 0
+        }, '0']
+      ]
+    });
+
+    const emailIds = queryResponse.methodResponses[0][1].ids || [];
+    const total = queryResponse.methodResponses[0][1].total || 0;
+
+    if (emailIds.length === 0) {
+      return { emails: [], total };
+    }
+
+    // Get full email details
+    const getResponse = await this.makeRequest({
+      using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail'],
+      methodCalls: [
+        ['Email/get', {
+          accountId: this.accountId,
+          ids: emailIds,
+          properties: [
+            'id', 'subject', 'from', 'to', 'cc', 'bcc', 
+            'receivedAt', 'size', 'preview', 'hasAttachment',
+            'keywords', 'mailboxIds', 'threadId'
+          ]
+        }, '1']
+      ]
+    });
+
+    const emails = getResponse.methodResponses[0][1].list || [];
+    return { emails, total };
+  }
+
   private async getDraftsMailbox(): Promise<string> {
     try {
       const mailboxes = await this.getMailboxes();
