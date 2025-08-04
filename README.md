@@ -45,6 +45,7 @@ We welcome contributions! Please see our [Contributing Guide](https://github.com
 
 *   **Email Templates** - Reusable email templates
 *   **Advanced Analytics** - Email usage insights and reports ✅ **COMPLETED v1.1.0**
+*   **Full JMAP Search** - Advanced filtering and bulk operations ✅ **COMPLETED**
 *   **Multi-Account Support** - Manage multiple Fastmail accounts
 *   **Webhook Support** - Real-time email notifications
 *   **Plugin System** - Extensible architecture for custom features

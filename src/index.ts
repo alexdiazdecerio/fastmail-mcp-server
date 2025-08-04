@@ -120,10 +120,14 @@ server.setRequestHandler(ToolsListRequestSchema, async () => {
       },
       {
         name: 'send_email',
-        description: 'Send a new email',
+        description: 'Send a new email. Supports sending from different identities/aliases when "from" parameter is specified.',
         inputSchema: {
           type: 'object',
           properties: {
+            from: { 
+              type: 'string', 
+              description: 'From email address (must be a valid alias/identity). Optional - if not specified, uses the default account email. Available identities can be found by checking your Fastmail aliases.' 
+            },
             to: {
               type: 'array',
               items: {
@@ -204,6 +208,37 @@ server.setRequestHandler(ToolsListRequestSchema, async () => {
         }
       },
       {
+        name: 'mark_emails_read',
+        description: 'Mark multiple emails as read or unread',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            emailIds: { 
+              type: 'array', 
+              items: { type: 'string' },
+              description: 'Array of email IDs to mark as read/unread' 
+            },
+            read: { type: 'boolean', description: 'True to mark as read, false to mark as unread' }
+          },
+          required: ['emailIds', 'read']
+        }
+      },
+      {
+        name: 'delete_emails',
+        description: 'Permanently delete multiple emails',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            emailIds: { 
+              type: 'array', 
+              items: { type: 'string' },
+              description: 'Array of email IDs to delete' 
+            }
+          },
+          required: ['emailIds']
+        }
+      },
+      {
         name: 'search_emails',
         description: 'Search for emails containing specific text',
         inputSchema: {
@@ -213,6 +248,78 @@ server.setRequestHandler(ToolsListRequestSchema, async () => {
             limit: { type: 'number', description: 'Maximum number of results (default: 50)' }
           },
           required: ['query']
+        }
+      },
+      {
+        name: 'search_advanced',
+        description: 'Advanced JMAP email search with full filtering capabilities. Note: JMAP servers enforce per-query limits - use pagination (limit + position) for large result sets.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            filter: {
+              type: 'object',
+              description: 'JMAP filter conditions',
+              properties: {
+                // Mailbox filters
+                inMailbox: { type: 'string', description: 'Search in specific mailbox ID' },
+                inMailboxOtherThan: { 
+                  type: 'array', 
+                  items: { type: 'string' },
+                  description: 'Exclude specific mailbox IDs' 
+                },
+                
+                // Date filters
+                before: { type: 'string', description: 'Emails received before this date (ISO format)' },
+                after: { type: 'string', description: 'Emails received on/after this date (ISO format)' },
+                
+                // Size filters
+                minSize: { type: 'number', description: 'Minimum email size in bytes' },
+                maxSize: { type: 'number', description: 'Maximum email size in bytes' },
+                
+                // Text search filters
+                text: { type: 'string', description: 'Search across all text fields (from, to, cc, bcc, subject, body)' },
+                from: { type: 'string', description: 'Search in From field only' },
+                to: { type: 'string', description: 'Search in To field only' },
+                cc: { type: 'string', description: 'Search in Cc field only' },
+                bcc: { type: 'string', description: 'Search in Bcc field only' },
+                subject: { type: 'string', description: 'Search in Subject field only' },
+                body: { type: 'string', description: 'Search in message body only' },
+                
+                // Keyword/flag filters
+                hasKeyword: { type: 'string', description: 'Email must have this keyword/flag (e.g., $seen, $flagged, $draft)' },
+                notKeyword: { type: 'string', description: 'Email must NOT have this keyword/flag' },
+                allInThreadHaveKeyword: { type: 'string', description: 'All emails in thread must have this keyword' },
+                someInThreadHaveKeyword: { type: 'string', description: 'At least one email in thread has this keyword' },
+                noneInThreadHaveKeyword: { type: 'string', description: 'No emails in thread have this keyword' },
+                
+                // Attachment filter
+                hasAttachment: { type: 'boolean', description: 'Filter by attachment presence' },
+                
+                // Convenience filters
+                isUnread: { type: 'boolean', description: 'Filter for unread emails (converted to notKeyword: $seen)' },
+                isFlagged: { type: 'boolean', description: 'Filter for flagged emails (converted to hasKeyword: $flagged)' },
+                isDraft: { type: 'boolean', description: 'Filter for draft emails (converted to hasKeyword: $draft)' }
+              }
+            },
+            sort: {
+              type: 'array',
+              description: 'Sort criteria',
+              items: {
+                type: 'object',
+                properties: {
+                  property: { 
+                    type: 'string', 
+                    enum: ['receivedAt', 'from', 'subject', 'size'],
+                    description: 'Property to sort by' 
+                  },
+                  isAscending: { type: 'boolean', description: 'Sort direction (default: false)' }
+                },
+                required: ['property']
+              }
+            },
+            limit: { type: 'number', description: 'Maximum number of results per query (default: 50, server may enforce lower caps)' },
+            position: { type: 'number', description: 'Starting position for pagination - use with limit to retrieve large result sets (default: 0)' }
+          }
         }
       },
       // 📊 ANALYTICS TOOLS
@@ -459,6 +566,68 @@ server.setRequestHandler(ToolsCallRequestSchema, async (request) => {
         };
       }
 
+      case 'mark_emails_read': {
+        const { emailIds, read } = args;
+        
+        if (!Array.isArray(emailIds) || emailIds.length === 0) {
+          return {
+            content: [{
+              type: 'text',
+              text: 'Error: emailIds must be a non-empty array'
+            }],
+            isError: true
+          };
+        }
+
+        const results = await fastmail.markEmailsAsRead(emailIds, read);
+        
+        const summary = {
+          total: emailIds.length,
+          successful: results.success.length,
+          failed: results.failed.length,
+          successfulIds: results.success,
+          failedDetails: results.failed
+        };
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(summary, null, 2)
+          }]
+        };
+      }
+
+      case 'delete_emails': {
+        const { emailIds } = args;
+        
+        if (!Array.isArray(emailIds) || emailIds.length === 0) {
+          return {
+            content: [{
+              type: 'text',
+              text: 'Error: emailIds must be a non-empty array'
+            }],
+            isError: true
+          };
+        }
+
+        const results = await fastmail.deleteEmails(emailIds);
+        
+        const summary = {
+          total: emailIds.length,
+          successful: results.success.length,
+          failed: results.failed.length,
+          successfulIds: results.success,
+          failedDetails: results.failed
+        };
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(summary, null, 2)
+          }]
+        };
+      }
+
       case 'search_emails': {
         const { query, limit } = args;
         const { emails, total } = await fastmail.searchEmails(query, limit);
@@ -479,6 +648,53 @@ server.setRequestHandler(ToolsCallRequestSchema, async (request) => {
               total,
               count: emails.length,
               query,
+              emails: formattedEmails
+            }, null, 2)
+          }]
+        };
+      }
+
+      case 'search_advanced': {
+        const { filter = {}, sort, limit, position } = args;
+        
+        const { emails, total } = await fastmail.searchJMAP({
+          filter,
+          sort,
+          limit,
+          position
+        });
+        
+        const formattedEmails = emails.map(email => ({
+          id: email.id,
+          subject: email.subject || '(no subject)',
+          from: email.from?.[0] || { email: 'unknown', name: 'Unknown' },
+          to: email.to || [],
+          cc: email.cc || [],
+          bcc: email.bcc || [],
+          receivedAt: email.receivedAt,
+          size: email.size,
+          preview: email.preview,
+          hasAttachment: email.hasAttachment || false,
+          isRead: email.keywords['$seen'] || false,
+          isFlagged: email.keywords['$flagged'] || false,
+          isDraft: email.keywords['$draft'] || false,
+          keywords: email.keywords || {},
+          mailboxIds: email.mailboxIds || []
+        }));
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              total,
+              count: emails.length,
+              requestedLimit: limit || 50,
+              actualLimit: emails.length,
+              position: position || 0,
+              hasMoreResults: emails.length === (limit || 50),
+              paginationNote: emails.length === (limit || 50) ? "Results equal requested limit - may indicate more data available. Use position parameter to paginate." : null,
+              filter,
+              sort,
               emails: formattedEmails
             }, null, 2)
           }]
