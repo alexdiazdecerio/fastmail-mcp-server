@@ -508,6 +508,28 @@ export class FastmailClient {
     return results;
   }
 
+  async markEmailsAsRead(emailIds: string[], read: boolean = true): Promise<{ success: string[]; failed: Array<{ emailId: string; error: string }> }> {
+    const results = {
+      success: [] as string[],
+      failed: [] as Array<{ emailId: string; error: string }>
+    };
+
+    // Process emails in batches for better performance and error handling
+    for (const emailId of emailIds) {
+      try {
+        await this.markAsRead(emailId, read);
+        results.success.push(emailId);
+      } catch (error) {
+        results.failed.push({
+          emailId,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+
+    return results;
+  }
+
   async searchEmails(query: string, limit: number = 50): Promise<{ emails: Email[]; total: number }> {
     return this.getEmails({
       filter: { text: query },

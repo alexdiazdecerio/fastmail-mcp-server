@@ -208,6 +208,22 @@ server.setRequestHandler(ToolsListRequestSchema, async () => {
         }
       },
       {
+        name: 'mark_emails_read',
+        description: 'Mark multiple emails as read or unread',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            emailIds: { 
+              type: 'array', 
+              items: { type: 'string' },
+              description: 'Array of email IDs to mark as read/unread' 
+            },
+            read: { type: 'boolean', description: 'True to mark as read, false to mark as unread' }
+          },
+          required: ['emailIds', 'read']
+        }
+      },
+      {
         name: 'delete_emails',
         description: 'Permanently delete multiple emails',
         inputSchema: {
@@ -474,6 +490,37 @@ server.setRequestHandler(ToolsCallRequestSchema, async (request) => {
           content: [{
             type: 'text',
             text: 'Email deleted successfully'
+          }]
+        };
+      }
+
+      case 'mark_emails_read': {
+        const { emailIds, read } = args;
+        
+        if (!Array.isArray(emailIds) || emailIds.length === 0) {
+          return {
+            content: [{
+              type: 'text',
+              text: 'Error: emailIds must be a non-empty array'
+            }],
+            isError: true
+          };
+        }
+
+        const results = await fastmail.markEmailsAsRead(emailIds, read);
+        
+        const summary = {
+          total: emailIds.length,
+          successful: results.success.length,
+          failed: results.failed.length,
+          successfulIds: results.success,
+          failedDetails: results.failed
+        };
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(summary, null, 2)
           }]
         };
       }
