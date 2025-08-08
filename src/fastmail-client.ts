@@ -508,6 +508,39 @@ export class FastmailClient {
     return results;
   }
 
+  async moveEmails(emailIds: string[], targetMailboxId: string): Promise<{ 
+    total: number; 
+    successful: number; 
+    failed: number; 
+    successfulIds: string[]; 
+    failedDetails: Array<{ emailId: string; error: string }> 
+  }> {
+    const results = {
+      total: emailIds.length,
+      successful: 0,
+      failed: 0,
+      successfulIds: [] as string[],
+      failedDetails: [] as Array<{ emailId: string; error: string }>
+    };
+
+    // Process emails individually for better error isolation
+    for (const emailId of emailIds) {
+      try {
+        await this.moveEmail(emailId, targetMailboxId);
+        results.successful++;
+        results.successfulIds.push(emailId);
+      } catch (error) {
+        results.failed++;
+        results.failedDetails.push({
+          emailId,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+
+    return results;
+  }
+
   async markEmailsAsRead(emailIds: string[], read: boolean = true): Promise<{ success: string[]; failed: Array<{ emailId: string; error: string }> }> {
     const results = {
       success: [] as string[],

@@ -197,6 +197,22 @@ server.setRequestHandler(ToolsListRequestSchema, async () => {
         }
       },
       {
+        name: 'move_emails',
+        description: 'Move multiple emails to a different mailbox/folder',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            emailIds: { 
+              type: 'array', 
+              items: { type: 'string' },
+              description: 'Array of email IDs to move' 
+            },
+            targetMailboxId: { type: 'string', description: 'The ID of the target mailbox' }
+          },
+          required: ['emailIds', 'targetMailboxId']
+        }
+      },
+      {
         name: 'delete_email',
         description: 'Permanently delete an email',
         inputSchema: {
@@ -550,6 +566,18 @@ server.setRequestHandler(ToolsCallRequestSchema, async (request) => {
           content: [{
             type: 'text',
             text: 'Email moved successfully'
+          }]
+        };
+      }
+
+      case 'move_emails': {
+        const { emailIds, targetMailboxId } = args;
+        const result = await fastmail.moveEmails(emailIds, targetMailboxId);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
           }]
         };
       }
